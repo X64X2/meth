@@ -1,7 +1,10 @@
 -- Constants
 local screenWidth = 20
 local screenHeight = 10
-local cellSize = 4
+local grid = 4
+local snake_speed = 5
+local food_chance = 0.1
+local score = 0
 
 -- Global variables
 local xMax = math.floor( 128 / 6 ) - 1
@@ -38,6 +41,18 @@ for i=1,screenHeight do
     end
 end
 
+-- Function to draw the game state on the console
+local function draw()
+    os.execute("cls") -- Clear the console (Windows-specific command)
+    for i=1,screenHeight do
+        for j=1,screenWidth do
+            io.write(grid[i][j])
+        end
+        print()
+    end
+    print("Score: " .. score)
+end
+
 local snakeX, snakeY = math.random(screenWidth), math.random(screenHeight)
 local function create_food()
     -- if not food then
@@ -70,18 +85,6 @@ local function create_food()
 
 local foodX, foodY = math.random(screenWidth), math.random(screenHeight)
 local score = 0
-
--- Function to draw the game state on the console
-local function draw()
-    os.execute("cls") -- Clear the console (Windows-specific command)
-    for i=1,screenHeight do
-        for j=1,screenWidth do
-            io.write(grid[i][j])
-        end
-        print()
-    end
-    print("Score: " .. score)
-end
 
 -- Main loop
 while true do
