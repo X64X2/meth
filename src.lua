@@ -2,6 +2,9 @@
 local screenWidth = 20
 local screenHeight = 10
 local grid = 4
+local grid_size = 10
+local snake_speed = 2
+local food_frequency = 50
 local snake_speed = 5
 local food_chance = 0.1
 local score = 0
@@ -41,6 +44,37 @@ for i=1,screenHeight do
     end
 end
 
+--Initialize the game state
+local snake = {}
+for i = 1, grid_size do
+    table.insert(snake, {x = i * grid_size, y = 1})
+end
+local food = {x = math.random(grid_size), y = math.random(grid_size)}
+
+-- Define some functions
+local update
+    -- Move the snake
+    for i = #snake, 1, -1 do
+        local head = snake[i]
+        local next = snake[i-1]
+        if not next then
+            -- If we're at the end of the snake, move the head based on user input
+            if love.keyboard.isDown("right") then
+                head.x = head.x + grid_size
+            elseif love.keyboard.isDown("left") then
+                head.x = head.x - grid_size
+            elseif love.keyboard.isDown("up") then
+                head.y = head.y - grid_size
+            elseif love.keyboard.isDown("down") then
+                head.y = head.y + grid_size
+            end
+        else
+            -- Otherwise, move the head to the position of the previous segment
+            head.x = next.x
+            head.y = next.y
+        end
+    end
+
 -- Function to draw the game state on the console
 local function draw()
     os.execute("cls") -- Clear the console (Windows-specific command)
@@ -51,6 +85,13 @@ local function draw()
         print()
     end
     print("Score: " .. score)
+end
+
+-- Function to draw a rectangle on the screen
+local function draw_rectangle(x, y, width, height)
+    -- Draw a filled rectangle
+    love.graphics.setColor(255, 255, 255)
+    love.graphics.rectangle(x, y, width, height)
 end
 
 local snakeX, snakeY = math.random(screenWidth), math.random(screenHeight)
