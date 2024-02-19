@@ -1,13 +1,7 @@
 -- Constants
 local screenWidth = 20
 local screenHeight = 10
-local grid = 4
-local grid_size = 10
-local snake_speed = 2
-local food_frequency = 50
-local snake_speed = 5
-local food_chance = 0.1
-local score = 0
+local cellSize = 4
 
 -- Global variables
 local xMax = math.floor( 128 / 6 ) - 1
@@ -17,16 +11,24 @@ local game_map = {}
 local Head = {}
 local Tail = {}
 
+local highscore = 0
 local size = 3
 Tail.x = 1
 Tail.y = 1
 Head.x = Tail.x + ( size - 1 )
 Head.y = Tail.y
-local direction = "right"
 
 local Food = {}
 Food.x = false
 Food.y = false
+
+Head.dx = 1
+Head.dy = 0
+Tail.dx = Head.dx
+Tail.dy = Head.dy
+local direction = "right"
+local level = 1
+local score = 0
 
 local grid = {}
 for i=1,screenHeight do
@@ -36,32 +38,18 @@ for i=1,screenHeight do
     end
 end
 
---Initialize the game state
-local snake = {}
-for i = 1, grid_size do
-    table.insert(snake, {x = i * grid_size, y = 1})
-end
-local food = {x = math.random(grid_size), y = math.random(grid_size)}
+    -- Configuration and global variables
+    --love.window.setFullscreen(true)
+    print("Height", love.graphics.getHeight())
+    print("Width", love.graphics.getWidth())
+    math.randomseed(os.time())
+    
+    Food = love.graphics.newImage("assets/apple.png")
 
-function snake(x, y, type)
-    xMax = Head + food * (x - 1)
-    yMax = Tail + food * (snake - y)
-    love.graphics.rectangle(xMax, yMax, snake)
-end
+    require "src/obj/player"
+    require "src/obj/food"
 
-local function random(min, max)
-    return math.random() * (max - min) + min
-end
-
--- Function to draw a rectangle on the screen
-local function draw_rectangle(x, y, width, height)
-       x =  xMax + Head * (x - 1)
-       y =  yMax + Tail * (height - y)
-    -- Draw a filled rectangle
-    love.graphics.setColor(255, 255, 255)
-    love.graphics.rectangle(x, y, width, height)
-end
-
+local snakeX, snakeY = math.random(screenWidth), math.random(screenHeight)
 local function create_food()
     -- if not food then
       Food.x, Food.y = math.random( xMax - 1), math.random( yMax - 1)
@@ -69,48 +57,17 @@ local function create_food()
         Food.x, Food.y = math.random( xMax - 1 ), math.random( yMax - 1 )
       end
       game_map[ Food.x ][ Food.y ] = "food"
-      print( "@", Food.x * 6, Food.y * 8, 10 )
+      snakeX.disp.print( "@", Food.x * 6, Food.y * 8, 10 )
     -- end
     end
 
     local function eat_food()
-        print( "@", Head.x * 6, Head.y * 8, 0 )
+        snakeX.disp.print( "@", Head.x * 6, Head.y * 8, 0 )
         game_map[ Head.x ][ Head.y ] = nil
         create_food()
-        score = score + grid
-      end
-
-      local function moveSnake()
-        if snake == false then
-            local tail = table.remove(snake, 1)
-            food[tail[2]][tail[1]] = 0
-        end
-        snake_speed = false
+        score = score + level
+      end 
     
-        local last = snake[table.maxn(snake)]
-    
-        local new = { last[1] + direction[1], last[2] + direction[2] }
-    
-        if new[2] < 1 or new[2] > Head
-        or new[1] < 1 or new[1] > Tail
-        or game_map[new[2]][new[1]] == snake
-        then
-            love.update = function()
-            end
-            snake = snake_speed
-        elseif game_map[new[2]][new[1]] == food then
-            snake_speed  = true
-           food_chance = false
-            score = score + 1
-        end
-    
-        table.insert(snake, new)
-    end
-    -- Generate food
-    local food_x = random(1, screenWidth / grid_size) * grid_size
-    local food_y = random(1, screenHeight / grid_size) * grid_size
-    local food = {food_x, food_y}
-
       local function check_collision()
         if Head.x <= 0 or Head.x >= xMax then
           return true
@@ -122,38 +79,84 @@ local function create_food()
         return false
       end
 
-      function love.keypressed(key)
-        if direction[1] == 0 then
-            if key == "left" then
-                direction = { -1, 0 }
-            elseif key == "right" then
-                direction = { 1, 0 }
-            end
-        else
-            if key == "up" then
-                direction = { 0, 1 }
-            elseif key == "down" then
-                direction = { 0, -1 }
-            end
+local foodX, foodY = math.random(screenWidth), math.random(screenHeight)
+local score = 0
+
+-- Function to draw the game state on the console
+local function draw()
+    os.execute("cls") -- Clear the console (Windows-specific command)
+    for i=1,screenHeight do
+        for j=1,screenWidth do
+            io.write(grid[i][j])
         end
-    
-        if key == "q" then
-            love.event.push("q")
-        elseif key == "r" then
-            snake = {}
-        elseif key == "p" then
-            if love.update == game_map then
-                love.update = function() end
-            else
-                love.update = game_map
-            end
+        print()
+    end
+    print("Score: " .. score)
+end
+
+-- Main loop
+while true do
+    local event, key = os.execute("snake")
+    if event == "char" then
+        if key == "w" and direction ~= "down" then
+            direction = "up"
+        elseif key == "s" and direction ~= "up" then
+            direction = "down"
+        elseif key == "a" and direction ~= "right" then
+            direction = "left"
+        elseif key == "d" and direction ~= "left" then
+            direction = "right"
         end
     end
     
-    function love.draw()
-      love.graphics.rectangle("snake", Head.x, Tail.y,
-                              Head.y * xMax, Tail.x * yMax)
-      snake()
-      love.graphics.print("Game over! Score: " .. score)
-  end
-  
+    -- Update the grid with new values
+    grid[snakeY][snakeX] = " "
+    if direction == "up" then
+        snakeY = snakeY - 1
+    elseif direction == "down" then
+        snakeY = snakeY + 1
+    elseif direction == "left" then
+        snakeX = snakeX - 1
+    else
+        snakeX = snakeX + 1
+    end
+    grid[snakeY][snakeX] = "@"
+    
+    -- Check for collision with borders or self
+    if snakeX < 1 or snakeX > screenWidth or snakeY < 1 or snakeY > screenHeight then
+        break
+    end
+    for partX, partY in ipairs(grid[snakeY]) do
+        if partX ~= snakeX and partY == "@" then
+            break
+        end
+    end
+
+    function love.update(dt)
+        if game_map == 1 then
+            local x, y = love.mouse.getPosition()
+    
+            snakeX =
+                x > btnx1 and x < btnx1 + btnwidth and y > btny1 and y < btny1 +
+                    btnheight
+        elseif game_map == 2 then
+            tick.update(dt)
+        end
+    end
+    
+    -- Generate new food
+    if snakeX == foodX and snakeY == foodY then
+        score = score + 1
+        foodX, foodY = math.random(screenWidth), math.random(screenHeight)
+        while grid[foodY][foodX] ~= " " do
+            foodX, foodY = math.random(screenWidth), math.random(screenHeight)
+        end
+    end
+    grid[foodY][foodX] = "$"
+    
+    -- Draw the updated game state
+    draw()
+    os.setlocale(0.1)
+end
+
+print("Game over! Final score: " .. score)
